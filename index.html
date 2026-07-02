@@ -1,0 +1,1449 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8" />
+<base target="_top">
+<title>The Tangerine Room — Business Manager</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<style>
+  :root{
+    --espresso:#542916;
+    --eau-trouble:#b79858;
+    --terre-cuite:#a13a1e;
+    --bleu-porcelaine:#88b8ce;
+    --nuage-de-lait:#fefaf0;
+    --miel-dore:#f1c166;
+    --shadow: 0 2px 10px rgba(84,41,22,0.10);
+    --radius: 14px;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    font-family:"Segoe UI", -apple-system, BlinkMacSystemFont, sans-serif;
+    background:var(--nuage-de-lait);
+    color:var(--espresso);
+  }
+  h1,h2,h3,h4{ font-family: Georgia, 'Times New Roman', serif; margin:0 0 8px; color:var(--espresso);}
+  a{color:inherit;}
+  button{
+    font-family:inherit; cursor:pointer; border:none; border-radius:10px;
+    padding:9px 16px; font-size:14px; font-weight:600; transition:transform .05s ease, opacity .15s ease;
+  }
+  button:active{ transform: scale(0.97); }
+  .btn-primary{ background:var(--terre-cuite); color:#fff; }
+  .btn-primary:hover{ opacity:0.9; }
+  .btn-secondary{ background:var(--bleu-porcelaine); color:#20323a; }
+  .btn-secondary:hover{ opacity:0.9; }
+  .btn-ghost{ background:transparent; color:var(--espresso); border:1.5px solid var(--eau-trouble); }
+  .btn-ghost:hover{ background:rgba(183,152,88,0.12); }
+  .btn-danger{ background:#c0392b; color:#fff; }
+  .btn-sm{ padding:5px 10px; font-size:12.5px; border-radius:8px; }
+  input, select, textarea{
+    font-family:inherit; font-size:14px; padding:8px 10px; border-radius:8px;
+    border:1.5px solid #e3d6c0; background:#fff; color:var(--espresso); width:100%;
+  }
+  input:focus, select:focus, textarea:focus{ outline:none; border-color:var(--terre-cuite); }
+  label{ font-size:12.5px; font-weight:600; color:var(--espresso); opacity:0.85; display:block; margin-bottom:4px;}
+
+  /* ---------- layout ---------- */
+  #app{ display:flex; min-height:100vh; }
+  #sidebar{
+    width:220px; background:var(--espresso); color:var(--nuage-de-lait);
+    display:flex; flex-direction:column; flex-shrink:0; position:sticky; top:0; height:100vh;
+  }
+  #sidebar .brand{ padding:22px 18px 14px; border-bottom:1px solid rgba(255,255,255,0.12); }
+  #sidebar .brand .name{ font-family:Georgia,serif; font-size:19px; line-height:1.2; }
+  #sidebar .brand .tag{ font-size:11px; color:var(--miel-dore); letter-spacing:.06em; text-transform:uppercase; margin-top:3px; }
+  #nav{ flex:1; padding:12px 10px; overflow-y:auto; }
+  .nav-item{
+    display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:10px;
+    cursor:pointer; font-size:14px; font-weight:600; color:rgba(255,255,255,0.78); margin-bottom:4px;
+  }
+  .nav-item:hover{ background:rgba(255,255,255,0.08); color:#fff; }
+  .nav-item.active{ background:var(--terre-cuite); color:#fff; }
+  .nav-item .ico{ font-size:16px; width:20px; text-align:center; }
+  #main{ flex:1; min-width:0; padding:24px 28px 60px; }
+  .topbar{ display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; flex-wrap:wrap; gap:10px; }
+  .topbar h1{ font-size:24px; }
+
+  .card{ background:#fff; border-radius:var(--radius); box-shadow:var(--shadow); padding:18px 20px; }
+  .grid{ display:grid; gap:16px; }
+  .grid-4{ grid-template-columns:repeat(4,1fr); }
+  .grid-3{ grid-template-columns:repeat(3,1fr); }
+  .grid-2{ grid-template-columns:repeat(2,1fr); }
+  @media(max-width:1100px){ .grid-4{grid-template-columns:repeat(2,1fr);} .grid-3{grid-template-columns:repeat(2,1fr);} }
+  @media(max-width:640px){ .grid-4,.grid-3,.grid-2{grid-template-columns:1fr;} }
+
+  .stat-card{ position:relative; overflow:hidden; }
+  .stat-card .label{ font-size:12.5px; font-weight:700; text-transform:uppercase; letter-spacing:.04em; color:var(--eau-trouble); }
+  .stat-card .value{ font-size:26px; font-weight:700; margin-top:6px; color:var(--espresso); }
+  .stat-card .sub{ font-size:12px; margin-top:4px; color:#8a7a68; }
+  .stat-card.accent-terre{ border-left:5px solid var(--terre-cuite); }
+  .stat-card.accent-miel{ border-left:5px solid var(--miel-dore); }
+  .stat-card.accent-bleu{ border-left:5px solid var(--bleu-porcelaine); }
+  .stat-card.accent-eau{ border-left:5px solid var(--eau-trouble); }
+
+  table{ width:100%; border-collapse:collapse; font-size:13.5px; }
+  th{ text-align:left; padding:10px 10px; color:var(--eau-trouble); font-size:11.5px; text-transform:uppercase; letter-spacing:.04em; border-bottom:2px solid #f0e6d4; }
+  td{ padding:10px 10px; border-bottom:1px solid #f4ecdf; vertical-align:middle; }
+  tr:hover td{ background:#fffaf0; }
+  .table-wrap{ overflow-x:auto; }
+
+  .badge{ display:inline-block; padding:3px 10px; border-radius:20px; font-size:11.5px; font-weight:700; }
+  .badge-paid{ background:#e3f3e6; color:#2e7d32; }
+  .badge-unpaid{ background:#fdeceb; color:var(--terre-cuite); }
+  .badge-partial{ background:#fff3da; color:#a3720f; }
+  .badge-void{ background:#eee; color:#888; }
+
+  .section-title{ display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; flex-wrap:wrap; gap:8px;}
+  .pill-tabs{ display:flex; gap:6px; margin-bottom:16px; flex-wrap:wrap; }
+  .pill-tab{ padding:7px 14px; border-radius:20px; background:#fff; border:1.5px solid #e3d6c0; font-size:13px; font-weight:600; cursor:pointer; }
+  .pill-tab.active{ background:var(--espresso); color:#fff; border-color:var(--espresso); }
+
+  .view{ display:none; }
+  .view.active{ display:block; }
+
+  /* modal */
+  .modal-overlay{ position:fixed; inset:0; background:rgba(30,17,10,0.45); display:none; align-items:flex-start; justify-content:center; z-index:100; padding:30px 14px; overflow-y:auto; }
+  .modal-overlay.open{ display:flex; }
+  .modal{ background:#fff; border-radius:16px; width:100%; max-width:640px; padding:22px 24px; box-shadow:0 10px 40px rgba(0,0,0,0.25); }
+  .modal h2{ font-size:19px; margin-bottom:16px; }
+  .modal-close{ float:right; background:none; color:var(--espresso); font-size:20px; padding:2px 8px; }
+  .form-row{ display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:12px; }
+  @media(max-width:520px){ .form-row{ grid-template-columns:1fr; } }
+  .form-actions{ display:flex; justify-content:flex-end; gap:10px; margin-top:18px; }
+
+  .line-items-table th, .line-items-table td{ padding:6px; font-size:13px; }
+  .totals-box{ margin-top:10px; margin-left:auto; width:260px; }
+  .totals-box .row{ display:flex; justify-content:space-between; padding:4px 0; font-size:14px; }
+  .totals-box .row.total{ font-weight:800; font-size:17px; border-top:2px solid var(--espresso); margin-top:6px; padding-top:8px; }
+
+  .config-banner{ background:#fff3da; border:1.5px solid var(--miel-dore); color:#7a5300; padding:14px 18px; border-radius:12px; margin-bottom:18px; font-size:13.5px; line-height:1.5; }
+  .config-banner code{ background:#00000010; padding:2px 6px; border-radius:5px; }
+
+  .toast{ position:fixed; bottom:20px; right:20px; background:var(--espresso); color:#fff; padding:12px 18px; border-radius:10px; font-size:13.5px; box-shadow:var(--shadow); z-index:200; opacity:0; transform:translateY(10px); transition:all .25s ease; pointer-events:none;}
+  .toast.show{ opacity:1; transform:translateY(0); }
+
+  .empty-state{ text-align:center; padding:40px 20px; color:#a8977f; }
+
+  .icon-btn{ background:none; border:none; padding:4px 6px; font-size:15px; }
+  .icon-btn:hover{ opacity:0.6; }
+
+  /* mobile nav */
+  #mobile-topbar{ display:none; background:var(--espresso); color:#fff; padding:14px 18px; align-items:center; justify-content:space-between; position:sticky; top:0; z-index:60; }
+  #mobile-topbar .name{ font-family:Georgia,serif; font-size:17px; }
+  #mobile-topbar button{ background:rgba(255,255,255,0.15); color:#fff; }
+
+  @media(max-width:900px){
+    #app{ flex-direction:column; }
+    #sidebar{ display:none; }
+    #sidebar.open{ display:flex; position:fixed; z-index:70; height:100vh; }
+    #mobile-topbar{ display:flex; }
+    #main{ padding:18px 14px 60px; }
+  }
+
+  @media print{
+    body *{ visibility:hidden; }
+    #printArea, #printArea *{ visibility:visible; }
+    #printArea{ position:absolute; top:0; left:0; width:100%; }
+  }
+
+  .loading-overlay{ position:fixed; inset:0; background:var(--nuage-de-lait); display:flex; align-items:center; justify-content:center; z-index:300; font-family:Georgia,serif; font-size:18px; color:var(--espresso); }
+</style>
+</head>
+<body>
+
+<div id="loadingOverlay" class="loading-overlay">🍊 Memuat The Tangerine Room…</div>
+
+<div id="mobile-topbar">
+  <div class="name">🍊 The Tangerine Room</div>
+  <button onclick="document.getElementById('sidebar').classList.toggle('open')">☰ Menu</button>
+</div>
+
+<div id="app">
+  <div id="sidebar">
+    <div class="brand">
+      <div class="name">🍊 The Tangerine Room</div>
+      <div class="tag">Business Manager</div>
+    </div>
+    <div id="nav">
+      <div class="nav-item active" data-view="dashboard"><span class="ico">📊</span> Dashboard</div>
+      <div class="nav-item" data-view="invoices"><span class="ico">🧾</span> Invoices</div>
+      <div class="nav-item" data-view="sales"><span class="ico">📈</span> Sales History</div>
+      <div class="nav-item" data-view="ingredients"><span class="ico">🥣</span> Ingredient Purchases</div>
+      <div class="nav-item" data-view="assets"><span class="ico">🛠️</span> Tools &amp; Maintenance</div>
+      <div class="nav-item" data-view="payroll"><span class="ico">👥</span> Payroll</div>
+      <div class="nav-item" data-view="settings"><span class="ico">⚙️</span> Settings</div>
+    </div>
+  </div>
+
+  <div id="main">
+    <div id="configBanner" class="config-banner" style="display:none;"></div>
+
+    <!-- ================= DASHBOARD ================= -->
+    <div class="view active" id="view-dashboard">
+      <div class="topbar">
+        <h1>Dashboard</h1>
+        <select id="dashPeriod" style="width:auto;">
+          <option value="7">7 Hari Terakhir</option>
+          <option value="30" selected>30 Hari Terakhir</option>
+          <option value="90">90 Hari Terakhir</option>
+          <option value="365">Tahun Ini</option>
+          <option value="all">Semua Waktu</option>
+        </select>
+      </div>
+
+      <div class="grid grid-4" style="margin-bottom:18px;">
+        <div class="card stat-card accent-terre">
+          <div class="label">Revenue</div>
+          <div class="value" id="statRevenue">Rp 0</div>
+          <div class="sub" id="statRevenueSub">—</div>
+        </div>
+        <div class="card stat-card accent-miel">
+          <div class="label">Profit (est.)</div>
+          <div class="value" id="statProfit">Rp 0</div>
+          <div class="sub" id="statProfitSub">Revenue − HPP − Biaya</div>
+        </div>
+        <div class="card stat-card accent-bleu">
+          <div class="label">Orders</div>
+          <div class="value" id="statOrders">0</div>
+          <div class="sub" id="statOrdersSub">—</div>
+        </div>
+        <div class="card stat-card accent-eau">
+          <div class="label">Belum Terbayar</div>
+          <div class="value" id="statUnpaid">Rp 0</div>
+          <div class="sub" id="statUnpaidSub">—</div>
+        </div>
+      </div>
+
+      <div class="grid grid-2" style="margin-bottom:18px;">
+        <div class="card">
+          <h3>Revenue Overview</h3>
+          <canvas id="chartRevenue" height="190"></canvas>
+        </div>
+        <div class="card">
+          <h3>Profit Overview</h3>
+          <canvas id="chartProfit" height="190"></canvas>
+        </div>
+      </div>
+
+      <div class="grid grid-2">
+        <div class="card">
+          <h3>Orders Overview</h3>
+          <canvas id="chartOrders" height="190"></canvas>
+        </div>
+        <div class="card">
+          <h3>Produk Terlaris</h3>
+          <canvas id="chartTopProducts" height="190"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- ================= INVOICES ================= -->
+    <div class="view" id="view-invoices">
+      <div class="topbar">
+        <h1>Invoices</h1>
+        <button class="btn-primary" onclick="openInvoiceModal()">+ Invoice Baru</button>
+      </div>
+      <div class="card">
+        <div class="table-wrap">
+          <table id="invoicesTable">
+            <thead><tr>
+              <th>No. Invoice</th><th>Cafe</th><th>Tanggal</th><th>Total</th><th>Status</th><th></th>
+            </tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ================= SALES HISTORY ================= -->
+    <div class="view" id="view-sales">
+      <div class="topbar">
+        <h1>Sales History</h1>
+      </div>
+      <div class="card" style="margin-bottom:16px;">
+        <div class="form-row" style="margin-bottom:0;">
+          <div><label>Dari Tanggal</label><input type="date" id="salesFrom"></div>
+          <div><label>Sampai Tanggal</label><input type="date" id="salesTo"></div>
+        </div>
+        <button class="btn-secondary btn-sm" style="margin-top:10px;" onclick="renderSales()">Filter</button>
+      </div>
+      <div class="grid grid-2" style="margin-bottom:16px;">
+        <div class="card">
+          <h3>Penjualan per Produk</h3>
+          <div class="table-wrap"><table id="salesByProductTable"><thead><tr><th>Produk</th><th>Qty Terjual</th><th>Revenue</th></tr></thead><tbody></tbody></table></div>
+        </div>
+        <div class="card">
+          <h3>Penjualan per Cafe</h3>
+          <div class="table-wrap"><table id="salesByCustomerTable"><thead><tr><th>Cafe</th><th>Jumlah Order</th><th>Revenue</th></tr></thead><tbody></tbody></table></div>
+        </div>
+      </div>
+      <div class="card">
+        <h3>Detail Transaksi</h3>
+        <div class="table-wrap">
+          <table id="salesDetailTable">
+            <thead><tr><th>Tanggal</th><th>Invoice</th><th>Cafe</th><th>Produk</th><th>Qty</th><th>Subtotal</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ================= INGREDIENT PURCHASES ================= -->
+    <div class="view" id="view-ingredients">
+      <div class="topbar">
+        <h1>Ingredient Purchases</h1>
+        <button class="btn-primary" onclick="openIngredientPurchaseModal()">+ Catat Pembelian</button>
+      </div>
+      <div class="card">
+        <div class="table-wrap">
+          <table id="ingredientPurchasesTable">
+            <thead><tr><th>Tanggal</th><th>Bahan</th><th>Supplier</th><th>Qty</th><th>Harga Satuan</th><th>Total</th><th></th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ================= TOOLS & MAINTENANCE ================= -->
+    <div class="view" id="view-assets">
+      <div class="topbar">
+        <h1>Tools, Utensil &amp; Maintenance</h1>
+      </div>
+      <div class="pill-tabs">
+        <div class="pill-tab active" data-assettab="purchases">Pembelian Tools/Utensil</div>
+        <div class="pill-tab" data-assettab="maintenance">Maintenance</div>
+      </div>
+
+      <div id="assetTab-purchases">
+        <div class="section-title"><div></div><button class="btn-primary" onclick="openAssetModal()">+ Catat Pembelian</button></div>
+        <div class="card">
+          <div class="table-wrap">
+            <table id="assetPurchasesTable">
+              <thead><tr><th>Tanggal</th><th>Item</th><th>Kategori</th><th>Supplier</th><th>Qty</th><th>Total</th><th></th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div id="assetTab-maintenance" style="display:none;">
+        <div class="section-title"><div></div><button class="btn-primary" onclick="openMaintenanceModal()">+ Catat Maintenance</button></div>
+        <div class="card">
+          <div class="table-wrap">
+            <table id="maintenanceTable">
+              <thead><tr><th>Tanggal</th><th>Item</th><th>Deskripsi</th><th>Vendor</th><th>Biaya</th><th></th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ================= PAYROLL ================= -->
+    <div class="view" id="view-payroll">
+      <div class="topbar">
+        <h1>Payroll Karyawan</h1>
+        <button class="btn-primary" onclick="openPayrollModal()">+ Catat Pembayaran</button>
+      </div>
+      <div class="card" style="margin-bottom:16px;">
+        <div class="section-title"><h3 style="margin:0;">Daftar Karyawan</h3><button class="btn-secondary btn-sm" onclick="openEmployeeModal()">+ Tambah Karyawan</button></div>
+        <div class="table-wrap">
+          <table id="employeesTable">
+            <thead><tr><th>Nama</th><th>Role</th><th>Tipe Pembayaran</th><th>Rate</th><th></th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="card">
+        <h3>Riwayat Pembayaran</h3>
+        <div class="table-wrap">
+          <table id="payrollTable">
+            <thead><tr><th>Tanggal Bayar</th><th>Karyawan</th><th>Periode</th><th>Jumlah</th><th>Status</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ================= SETTINGS ================= -->
+    <div class="view" id="view-settings">
+      <div class="topbar"><h1>Settings</h1></div>
+      <div class="pill-tabs">
+        <div class="pill-tab active" data-settingstab="products">Produk</div>
+        <div class="pill-tab" data-settingstab="customers">Cafe (Pelanggan)</div>
+        <div class="pill-tab" data-settingstab="employees">Karyawan</div>
+        <div class="pill-tab" data-settingstab="ingredientsmaster">Master Bahan</div>
+      </div>
+
+      <div id="settingsTab-products">
+        <div class="section-title"><div></div><button class="btn-secondary btn-sm" onclick="openProductModal()">+ Tambah Produk</button></div>
+        <div class="card"><div class="table-wrap">
+          <table id="productsTable"><thead><tr><th>Produk</th><th>Kategori</th><th>Harga Jual</th><th>Estimasi Biaya (HPP)</th><th></th></tr></thead><tbody></tbody></table>
+        </div></div>
+      </div>
+
+      <div id="settingsTab-customers" style="display:none;">
+        <div class="section-title"><div></div><button class="btn-secondary btn-sm" onclick="openCustomerModal()">+ Tambah Cafe</button></div>
+        <div class="card"><div class="table-wrap">
+          <table id="customersTable"><thead><tr><th>Nama Cafe</th><th>Kontak</th><th>Telepon</th><th>Email</th><th></th></tr></thead><tbody></tbody></table>
+        </div></div>
+      </div>
+
+      <div id="settingsTab-employees" style="display:none;">
+        <div class="section-title"><div></div><button class="btn-secondary btn-sm" onclick="openEmployeeModal()">+ Tambah Karyawan</button></div>
+        <div class="card"><div class="table-wrap">
+          <table id="employeesTable2"><thead><tr><th>Nama</th><th>Role</th><th>Tipe</th><th>Rate</th><th></th></tr></thead><tbody></tbody></table>
+        </div></div>
+      </div>
+
+      <div id="settingsTab-ingredientsmaster" style="display:none;">
+        <div class="section-title"><div></div><button class="btn-secondary btn-sm" onclick="openIngredientMasterModal()">+ Tambah Bahan</button></div>
+        <div class="card"><div class="table-wrap">
+          <table id="ingredientsMasterTable"><thead><tr><th>Nama Bahan</th><th>Kategori</th><th>Unit</th><th></th></tr></thead><tbody></tbody></table>
+        </div></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ============ MODALS ============ -->
+<div class="modal-overlay" id="modalInvoice">
+  <div class="modal" style="max-width:760px;">
+    <button class="modal-close" onclick="closeModal('modalInvoice')">×</button>
+    <h2>Invoice Baru</h2>
+    <div class="form-row">
+      <div><label>Cafe</label><select id="invCustomer"></select></div>
+      <div><label>Tanggal Invoice</label><input type="date" id="invDate"></div>
+    </div>
+    <div class="form-row">
+      <div><label>Jatuh Tempo</label><input type="date" id="invDueDate"></div>
+      <div><label>No. Invoice</label><input type="text" id="invNumber"></div>
+    </div>
+    <h3 style="margin-top:16px;">Item Pesanan</h3>
+    <div class="table-wrap">
+      <table class="line-items-table">
+        <thead><tr><th style="width:34%;">Produk</th><th>Qty</th><th>Harga</th><th>Subtotal</th><th></th></tr></thead>
+        <tbody id="invItemsBody"></tbody>
+      </table>
+    </div>
+    <button class="btn-ghost btn-sm" style="margin-top:8px;" onclick="addInvoiceLine()">+ Tambah Item</button>
+    <div class="totals-box">
+      <div class="row"><span>Subtotal</span><span id="invSubtotalDisplay">Rp 0</span></div>
+      <div class="row"><span>Diskon</span><span><input type="number" id="invDiscount" value="0" style="width:110px; text-align:right;" oninput="recalcInvoiceTotals()"></span></div>
+      <div class="row total"><span>Total</span><span id="invTotalDisplay">Rp 0</span></div>
+    </div>
+    <div><label style="margin-top:10px;">Catatan</label><textarea id="invNotes" rows="2"></textarea></div>
+    <div class="form-actions">
+      <button class="btn-ghost" onclick="closeModal('modalInvoice')">Batal</button>
+      <button class="btn-primary" onclick="saveInvoice()">Simpan Invoice</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modalIngredientPurchase">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('modalIngredientPurchase')">×</button>
+    <h2>Catat Pembelian Bahan</h2>
+    <div class="form-row">
+      <div><label>Tanggal</label><input type="date" id="ipDate"></div>
+      <div><label>Bahan</label><select id="ipIngredient"></select></div>
+    </div>
+    <div class="form-row">
+      <div><label>Supplier</label><input type="text" id="ipSupplier"></div>
+      <div><label>Unit</label><input type="text" id="ipUnit" placeholder="kg / liter / pcs"></div>
+    </div>
+    <div class="form-row">
+      <div><label>Qty</label><input type="number" id="ipQty" value="1" oninput="ipRecalc()"></div>
+      <div><label>Harga Satuan</label><input type="number" id="ipUnitCost" value="0" oninput="ipRecalc()"></div>
+    </div>
+    <div><label>Total Biaya</label><input type="number" id="ipTotalCost" value="0"></div>
+    <div style="margin-top:10px;"><label>Catatan</label><textarea id="ipNotes" rows="2"></textarea></div>
+    <div class="form-actions">
+      <button class="btn-ghost" onclick="closeModal('modalIngredientPurchase')">Batal</button>
+      <button class="btn-primary" onclick="saveIngredientPurchase()">Simpan</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modalAsset">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('modalAsset')">×</button>
+    <h2>Catat Pembelian Tools/Utensil</h2>
+    <div class="form-row">
+      <div><label>Tanggal</label><input type="date" id="asDate"></div>
+      <div><label>Nama Item</label><input type="text" id="asName"></div>
+    </div>
+    <div class="form-row">
+      <div><label>Kategori</label>
+        <select id="asCategory">
+          <option value="Tool">Tool</option>
+          <option value="Utensil">Utensil</option>
+          <option value="Equipment">Equipment</option>
+          <option value="Other">Other</option>
+        </select>
+      </div>
+      <div><label>Supplier</label><input type="text" id="asSupplier"></div>
+    </div>
+    <div class="form-row">
+      <div><label>Qty</label><input type="number" id="asQty" value="1" oninput="asRecalc()"></div>
+      <div><label>Harga Satuan</label><input type="number" id="asUnitCost" value="0" oninput="asRecalc()"></div>
+    </div>
+    <div><label>Total Biaya</label><input type="number" id="asTotalCost" value="0"></div>
+    <div style="margin-top:10px;"><label>Catatan</label><textarea id="asNotes" rows="2"></textarea></div>
+    <div class="form-actions">
+      <button class="btn-ghost" onclick="closeModal('modalAsset')">Batal</button>
+      <button class="btn-primary" onclick="saveAssetPurchase()">Simpan</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modalMaintenance">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('modalMaintenance')">×</button>
+    <h2>Catat Maintenance</h2>
+    <div class="form-row">
+      <div><label>Tanggal</label><input type="date" id="mtDate"></div>
+      <div><label>Nama Item / Alat</label><input type="text" id="mtName"></div>
+    </div>
+    <div class="form-row">
+      <div><label>Vendor</label><input type="text" id="mtVendor"></div>
+      <div><label>Biaya</label><input type="number" id="mtCost" value="0"></div>
+    </div>
+    <div><label>Deskripsi</label><textarea id="mtDesc" rows="2"></textarea></div>
+    <div class="form-actions">
+      <button class="btn-ghost" onclick="closeModal('modalMaintenance')">Batal</button>
+      <button class="btn-primary" onclick="saveMaintenance()">Simpan</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modalEmployee">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('modalEmployee')">×</button>
+    <h2>Tambah Karyawan</h2>
+    <div class="form-row">
+      <div><label>Nama</label><input type="text" id="empName"></div>
+      <div><label>Role</label><input type="text" id="empRole"></div>
+    </div>
+    <div class="form-row">
+      <div><label>Tipe Pembayaran</label>
+        <select id="empType">
+          <option value="monthly">Bulanan</option>
+          <option value="daily">Harian</option>
+          <option value="per_session">Per Sesi</option>
+          <option value="hourly">Per Jam</option>
+        </select>
+      </div>
+      <div><label>Rate</label><input type="number" id="empRate" value="0"></div>
+    </div>
+    <div><label>Catatan</label><textarea id="empNotes" rows="2"></textarea></div>
+    <div class="form-actions">
+      <button class="btn-ghost" onclick="closeModal('modalEmployee')">Batal</button>
+      <button class="btn-primary" onclick="saveEmployee()">Simpan</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modalPayroll">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('modalPayroll')">×</button>
+    <h2>Catat Pembayaran Gaji</h2>
+    <div class="form-row">
+      <div><label>Karyawan</label><select id="prEmployee"></select></div>
+      <div><label>Tanggal Bayar</label><input type="date" id="prDate"></div>
+    </div>
+    <div class="form-row">
+      <div><label>Periode Mulai</label><input type="date" id="prPeriodStart"></div>
+      <div><label>Periode Selesai</label><input type="date" id="prPeriodEnd"></div>
+    </div>
+    <div class="form-row">
+      <div><label>Jumlah</label><input type="number" id="prAmount" value="0"></div>
+      <div><label>Status</label>
+        <select id="prStatus"><option value="paid">Sudah Dibayar</option><option value="pending">Pending</option></select>
+      </div>
+    </div>
+    <div><label>Catatan</label><textarea id="prNotes" rows="2"></textarea></div>
+    <div class="form-actions">
+      <button class="btn-ghost" onclick="closeModal('modalPayroll')">Batal</button>
+      <button class="btn-primary" onclick="savePayroll()">Simpan</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modalProduct">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('modalProduct')">×</button>
+    <h2 id="productModalTitle">Tambah Produk</h2>
+    <input type="hidden" id="prodId">
+    <div class="form-row">
+      <div><label>Nama Produk</label><input type="text" id="prodName"></div>
+      <div><label>Kategori</label><input type="text" id="prodCategory"></div>
+    </div>
+    <div class="form-row">
+      <div><label>Harga Jual</label><input type="number" id="prodPrice" value="0"></div>
+      <div><label>Estimasi Biaya (HPP)</label><input type="number" id="prodCost" value="0"></div>
+    </div>
+    <div class="form-actions">
+      <button class="btn-ghost" onclick="closeModal('modalProduct')">Batal</button>
+      <button class="btn-primary" onclick="saveProduct()">Simpan</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modalCustomer">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('modalCustomer')">×</button>
+    <h2 id="customerModalTitle">Tambah Cafe</h2>
+    <input type="hidden" id="custId">
+    <div class="form-row">
+      <div><label>Nama Cafe</label><input type="text" id="custName"></div>
+      <div><label>Contact Person</label><input type="text" id="custContact"></div>
+    </div>
+    <div class="form-row">
+      <div><label>Telepon</label><input type="text" id="custPhone"></div>
+      <div><label>Email</label><input type="text" id="custEmail"></div>
+    </div>
+    <div><label>Alamat</label><textarea id="custAddress" rows="2"></textarea></div>
+    <div class="form-actions">
+      <button class="btn-ghost" onclick="closeModal('modalCustomer')">Batal</button>
+      <button class="btn-primary" onclick="saveCustomer()">Simpan</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modalIngredientMaster">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('modalIngredientMaster')">×</button>
+    <h2>Tambah Bahan Baku</h2>
+    <div class="form-row">
+      <div><label>Nama Bahan</label><input type="text" id="imName"></div>
+      <div><label>Kategori</label><input type="text" id="imCategory"></div>
+    </div>
+    <div><label>Unit</label><input type="text" id="imUnit" placeholder="kg / liter / pcs"></div>
+    <div class="form-actions">
+      <button class="btn-ghost" onclick="closeModal('modalIngredientMaster')">Batal</button>
+      <button class="btn-primary" onclick="saveIngredientMaster()">Simpan</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast" class="toast"></div>
+<div id="printArea" style="display:none;"></div>
+
+<script>
+/* =========================================================
+   google.script.run WRAPPER — turns the callback API into
+   a Promise so we can use async/await everywhere below.
+========================================================= */
+function gsRun(fnName, ...args){
+  return new Promise((resolve, reject)=>{
+    google.script.run
+      .withSuccessHandler(resolve)
+      .withFailureHandler(err=> reject(err))
+      [fnName](...args);
+  });
+}
+
+/* =========================================================
+   STATE
+========================================================= */
+const state = {
+  products: [],
+  customers: [],
+  employees: [],
+  ingredients: [],
+  invoices: [],
+  invoiceItemsFlat: [],
+  ingredientPurchases: [],
+  assetPurchases: [],
+  maintenance: [],
+  payroll: []
+};
+let charts = {};
+
+/* =========================================================
+   UTILITIES
+========================================================= */
+function fmtIDR(n){
+  n = Number(n) || 0;
+  return "Rp " + n.toLocaleString('id-ID', {maximumFractionDigits:0});
+}
+function fmtDate(d){
+  if(!d) return '-';
+  const dt = new Date(d);
+  return dt.toLocaleDateString('id-ID', {day:'2-digit', month:'short', year:'numeric'});
+}
+function todayStr(){ return new Date().toISOString().slice(0,10); }
+function showToast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), 2400);
+}
+function openModal(id){ document.getElementById(id).classList.add('open'); }
+function closeModal(id){ document.getElementById(id).classList.remove('open'); }
+function statusBadge(status){
+  const map = {paid:'badge-paid', unpaid:'badge-unpaid', partial:'badge-partial', void:'badge-void'};
+  const label = {paid:'Lunas', unpaid:'Belum Bayar', partial:'Sebagian', void:'Batal'};
+  return `<span class="badge ${map[status]||''}">${label[status]||status}</span>`;
+}
+
+/* =========================================================
+   NAVIGATION
+========================================================= */
+document.querySelectorAll('.nav-item').forEach(item=>{
+  item.addEventListener('click', ()=>{
+    document.querySelectorAll('.nav-item').forEach(i=>i.classList.remove('active'));
+    item.classList.add('active');
+    document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+    document.getElementById('view-'+item.dataset.view).classList.add('active');
+    document.getElementById('sidebar').classList.remove('open');
+    if(item.dataset.view === 'dashboard') renderDashboard();
+    if(item.dataset.view === 'sales') renderSales();
+  });
+});
+
+document.querySelectorAll('[data-assettab]').forEach(tab=>{
+  tab.addEventListener('click', ()=>{
+    document.querySelectorAll('[data-assettab]').forEach(t=>t.classList.remove('active'));
+    tab.classList.add('active');
+    document.getElementById('assetTab-purchases').style.display = tab.dataset.assettab==='purchases' ? 'block':'none';
+    document.getElementById('assetTab-maintenance').style.display = tab.dataset.assettab==='maintenance' ? 'block':'none';
+  });
+});
+
+document.querySelectorAll('[data-settingstab]').forEach(tab=>{
+  tab.addEventListener('click', ()=>{
+    document.querySelectorAll('[data-settingstab]').forEach(t=>t.classList.remove('active'));
+    tab.classList.add('active');
+    ['products','customers','employees','ingredientsmaster'].forEach(name=>{
+      document.getElementById('settingsTab-'+name).style.display = (tab.dataset.settingstab===name) ? 'block':'none';
+    });
+  });
+});
+
+document.getElementById('dashPeriod').addEventListener('change', renderDashboard);
+
+/* =========================================================
+   DATA LOADING
+========================================================= */
+async function loadAll(){
+  try{
+    const data = await gsRun('getAllData');
+    state.products = data.products || [];
+    state.customers = data.customers || [];
+    state.employees = data.employees || [];
+    state.ingredients = data.ingredients || [];
+    state.invoices = data.invoices || [];
+    state.invoiceItemsFlat = data.invoiceItems || [];
+    state.ingredientPurchases = data.ingredientPurchases || [];
+    state.assetPurchases = data.assetPurchases || [];
+    state.maintenance = data.maintenance || [];
+    state.payroll = data.payroll || [];
+    document.getElementById('configBanner').style.display='none';
+  }catch(e){
+    console.error(e);
+    document.getElementById('configBanner').style.display='block';
+    document.getElementById('configBanner').innerHTML =
+      `⚠️ <b>Belum siap.</b> Sepertinya sheet database belum dibuat. Buka Google Sheet ini di komputer → menu <b>Extensions → Apps Script</b> → pilih fungsi <code>setupSheets</code> di dropdown atas → klik ▶️ Run sekali. Setelah itu refresh halaman ini.<br><span style="opacity:.7;">Detail error: ${(e && e.message) || e}</span>`;
+  }
+  renderAllTables();
+  renderDashboard();
+  document.getElementById('loadingOverlay').style.display = 'none';
+}
+
+function renderAllTables(){
+  renderInvoicesTable();
+  renderIngredientPurchasesTable();
+  renderAssetPurchasesTable();
+  renderMaintenanceTable();
+  renderEmployeesTable();
+  renderPayrollTable();
+  renderProductsTable();
+  renderCustomersTable();
+  renderIngredientsMasterTable();
+  populateSelects();
+}
+
+function populateSelects(){
+  const custSelect = document.getElementById('invCustomer');
+  custSelect.innerHTML = state.customers.map(c=>`<option value="${c.id}">${c.name}</option>`).join('') || '<option value="">(Belum ada cafe — tambah di Settings)</option>';
+  const ingSelect = document.getElementById('ipIngredient');
+  ingSelect.innerHTML = state.ingredients.map(i=>`<option value="${i.id}" data-unit="${i.unit}">${i.name}</option>`).join('');
+  const empSelect = document.getElementById('prEmployee');
+  empSelect.innerHTML = state.employees.map(e=>`<option value="${e.id}" data-rate="${e.rate}">${e.name}</option>`).join('');
+}
+
+/* =========================================================
+   DASHBOARD
+========================================================= */
+function getPeriodRange(){
+  const val = document.getElementById('dashPeriod').value;
+  const now = new Date();
+  let from;
+  if(val === 'all'){ from = new Date(2000,0,1); }
+  else{ from = new Date(now); from.setDate(from.getDate() - Number(val)); }
+  return {from, to: now};
+}
+
+function renderDashboard(){
+  const {from, to} = getPeriodRange();
+  const invInRange = state.invoices.filter(inv=>{
+    const d = new Date(inv.invoice_date);
+    return d >= from && d <= to && inv.status !== 'void';
+  });
+
+  const revenue = invInRange.reduce((s,i)=>s+Number(i.total||0),0);
+  const unpaidTotal = invInRange.reduce((s,i)=> s + (Number(i.total||0) - Number(i.amount_paid||0)) * (i.status==='paid'?0:1), 0);
+  const orderCount = invInRange.length;
+
+  const invIds = new Set(invInRange.map(i=>i.id));
+  const itemsInRange = state.invoiceItemsFlat.filter(it=>invIds.has(it.invoice_id));
+  const cogs = itemsInRange.reduce((s,it)=> s + Number(it.cost_price||0)*Number(it.quantity||0), 0);
+
+  const ingCost = state.ingredientPurchases.filter(p=>{const d=new Date(p.purchase_date); return d>=from && d<=to;}).reduce((s,p)=>s+Number(p.total_cost||0),0);
+  const assetCost = state.assetPurchases.filter(p=>{const d=new Date(p.purchase_date); return d>=from && d<=to;}).reduce((s,p)=>s+Number(p.total_cost||0),0);
+  const maintCost = state.maintenance.filter(p=>{const d=new Date(p.maintenance_date); return d>=from && d<=to;}).reduce((s,p)=>s+Number(p.cost||0),0);
+  const payrollCost = state.payroll.filter(p=>{const d=new Date(p.date_paid); return d>=from && d<=to && p.status==='paid';}).reduce((s,p)=>s+Number(p.amount||0),0);
+
+  const profit = revenue - cogs - ingCost - assetCost - maintCost - payrollCost;
+
+  document.getElementById('statRevenue').textContent = fmtIDR(revenue);
+  document.getElementById('statRevenueSub').textContent = orderCount + ' order dalam periode ini';
+  document.getElementById('statProfit').textContent = fmtIDR(profit);
+  document.getElementById('statProfitSub').textContent = `HPP ${fmtIDR(cogs)} · Bahan ${fmtIDR(ingCost)} · Tools/Maint ${fmtIDR(assetCost+maintCost)} · Payroll ${fmtIDR(payrollCost)}`;
+  document.getElementById('statOrders').textContent = orderCount;
+  const paidCount = invInRange.filter(i=>i.status==='paid').length;
+  document.getElementById('statOrdersSub').textContent = paidCount + ' lunas · ' + (orderCount-paidCount) + ' belum lunas';
+  document.getElementById('statUnpaid').textContent = fmtIDR(unpaidTotal);
+  document.getElementById('statUnpaidSub').textContent = 'Piutang dari cafe';
+
+  // Revenue trend (by day)
+  const dayMap = {};
+  invInRange.forEach(inv=>{
+    const key = inv.invoice_date;
+    dayMap[key] = (dayMap[key]||0) + Number(inv.total||0);
+  });
+  const days = Object.keys(dayMap).sort();
+  drawLineChart('chartRevenue', days.map(fmtDate), days.map(d=>dayMap[d]), 'Revenue', getCss('--terre-cuite'));
+
+  // Profit trend approx: revenue per day minus proportional cogs
+  const cogsByDay = {};
+  itemsInRange.forEach(it=>{
+    const inv = state.invoices.find(i=>i.id===it.invoice_id);
+    if(!inv) return;
+    const key = inv.invoice_date;
+    cogsByDay[key] = (cogsByDay[key]||0) + Number(it.cost_price||0)*Number(it.quantity||0);
+  });
+  drawLineChart('chartProfit', days.map(fmtDate), days.map(d=> (dayMap[d]||0) - (cogsByDay[d]||0) ), 'Gross Profit', getCss('--miel-dore'));
+
+  // Orders overview doughnut
+  const statusCounts = {paid:0, unpaid:0, partial:0};
+  invInRange.forEach(i=>{ if(statusCounts[i.status]!==undefined) statusCounts[i.status]++; });
+  drawDoughnut('chartOrders', ['Lunas','Belum Bayar','Sebagian'], [statusCounts.paid, statusCounts.unpaid, statusCounts.partial], ['#2e7d32', getCss('--terre-cuite'), getCss('--miel-dore')]);
+
+  // Top products bar
+  const prodQty = {};
+  itemsInRange.forEach(it=>{ prodQty[it.product_name] = (prodQty[it.product_name]||0) + Number(it.quantity||0); });
+  const sortedProd = Object.entries(prodQty).sort((a,b)=>b[1]-a[1]).slice(0,8);
+  drawBarChart('chartTopProducts', sortedProd.map(p=>p[0]), sortedProd.map(p=>p[1]), getCss('--bleu-porcelaine'));
+}
+
+function getCss(varName){
+  return getComputedStyle(document.documentElement).getPropertyValue(varName).trim();
+}
+
+function drawLineChart(canvasId, labels, data, label, color){
+  if(charts[canvasId]) charts[canvasId].destroy();
+  const ctx = document.getElementById(canvasId).getContext('2d');
+  charts[canvasId] = new Chart(ctx, {
+    type:'line',
+    data:{ labels, datasets:[{ label, data, borderColor:color, backgroundColor:color+'33', tension:0.3, fill:true }]},
+    options:{ plugins:{legend:{display:false}}, scales:{y:{beginAtZero:true}} }
+  });
+}
+function drawDoughnut(canvasId, labels, data, colors){
+  if(charts[canvasId]) charts[canvasId].destroy();
+  const ctx = document.getElementById(canvasId).getContext('2d');
+  charts[canvasId] = new Chart(ctx, { type:'doughnut', data:{labels, datasets:[{data, backgroundColor:colors}]}, options:{plugins:{legend:{position:'bottom'}}} });
+}
+function drawBarChart(canvasId, labels, data, color){
+  if(charts[canvasId]) charts[canvasId].destroy();
+  const ctx = document.getElementById(canvasId).getContext('2d');
+  charts[canvasId] = new Chart(ctx, { type:'bar', data:{labels, datasets:[{label:'Qty Terjual', data, backgroundColor:color}]}, options:{plugins:{legend:{display:false}}, scales:{y:{beginAtZero:true}}} });
+}
+
+/* =========================================================
+   INVOICES
+========================================================= */
+function renderInvoicesTable(){
+  const tbody = document.querySelector('#invoicesTable tbody');
+  if(state.invoices.length===0){ tbody.innerHTML = `<tr><td colspan="6"><div class="empty-state">Belum ada invoice. Klik "+ Invoice Baru" untuk membuat.</div></td></tr>`; return; }
+  tbody.innerHTML = state.invoices.map(inv=>{
+    const cust = state.customers.find(c=>c.id===inv.customer_id);
+    return `<tr>
+      <td>${inv.invoice_number}</td>
+      <td>${cust?cust.name:'-'}</td>
+      <td>${fmtDate(inv.invoice_date)}</td>
+      <td>${fmtIDR(inv.total)}</td>
+      <td>${statusBadge(inv.status)}</td>
+      <td style="white-space:nowrap;">
+        <button class="icon-btn" title="Print" onclick="printInvoice('${inv.id}')">🖨️</button>
+        ${inv.status!=='paid' ? `<button class="icon-btn" title="Tandai Lunas" onclick="markPaid('${inv.id}')">✅</button>` : ''}
+        <button class="icon-btn" title="Hapus" onclick="deleteInvoice('${inv.id}')">🗑️</button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function openInvoiceModal(){
+  document.getElementById('invDate').value = todayStr();
+  document.getElementById('invDueDate').value = todayStr();
+  document.getElementById('invNumber').value = generateInvoiceNumber();
+  document.getElementById('invNotes').value = '';
+  document.getElementById('invDiscount').value = 0;
+  document.getElementById('invItemsBody').innerHTML = '';
+  addInvoiceLine();
+  populateSelects();
+  openModal('modalInvoice');
+}
+function generateInvoiceNumber(){
+  const d = new Date();
+  const ymd = d.toISOString().slice(0,10).replace(/-/g,'');
+  const countToday = state.invoices.filter(i=>i.invoice_number.includes(ymd)).length + 1;
+  return `TR-${ymd}-${String(countToday).padStart(3,'0')}`;
+}
+function addInvoiceLine(){
+  const row = document.createElement('tr');
+  row.innerHTML = `
+    <td><select class="lineProduct" onchange="lineProductChanged(this)">
+      ${state.products.map(p=>`<option value="${p.id}" data-price="${p.unit_price}" data-cost="${p.cost_price}">${p.name}</option>`).join('')}
+    </select></td>
+    <td><input type="number" class="lineQty" value="1" min="0" oninput="recalcInvoiceTotals()" style="width:70px;"></td>
+    <td><input type="number" class="linePrice" value="0" oninput="recalcInvoiceTotals()" style="width:100px;"></td>
+    <td class="lineSubtotal">Rp 0</td>
+    <td><button class="icon-btn" onclick="this.closest('tr').remove(); recalcInvoiceTotals();">🗑️</button></td>
+  `;
+  document.getElementById('invItemsBody').appendChild(row);
+  lineProductChanged(row.querySelector('.lineProduct'));
+}
+function lineProductChanged(sel){
+  const opt = sel.selectedOptions[0];
+  const row = sel.closest('tr');
+  if(opt){ row.querySelector('.linePrice').value = opt.dataset.price; }
+  recalcInvoiceTotals();
+}
+function recalcInvoiceTotals(){
+  let subtotal = 0;
+  document.querySelectorAll('#invItemsBody tr').forEach(row=>{
+    const qty = Number(row.querySelector('.lineQty').value)||0;
+    const price = Number(row.querySelector('.linePrice').value)||0;
+    const lineTotal = qty*price;
+    row.querySelector('.lineSubtotal').textContent = fmtIDR(lineTotal);
+    subtotal += lineTotal;
+  });
+  const discount = Number(document.getElementById('invDiscount').value)||0;
+  document.getElementById('invSubtotalDisplay').textContent = fmtIDR(subtotal);
+  document.getElementById('invTotalDisplay').textContent = fmtIDR(subtotal - discount);
+}
+async function saveInvoice(){
+  const customerId = document.getElementById('invCustomer').value;
+  if(!customerId){ showToast('Tambahkan cafe dulu di Settings.'); return; }
+  const rows = [...document.querySelectorAll('#invItemsBody tr')];
+  if(rows.length===0){ showToast('Tambahkan minimal 1 item.'); return; }
+
+  let subtotal = 0;
+  const items = rows.map(row=>{
+    const sel = row.querySelector('.lineProduct');
+    const opt = sel.selectedOptions[0];
+    const qty = Number(row.querySelector('.lineQty').value)||0;
+    const price = Number(row.querySelector('.linePrice').value)||0;
+    const lineTotal = qty*price;
+    subtotal += lineTotal;
+    return {
+      product_id: sel.value,
+      product_name: opt.textContent,
+      quantity: qty,
+      unit_price: price,
+      cost_price: Number(opt.dataset.cost)||0,
+      line_total: lineTotal
+    };
+  });
+  const discount = Number(document.getElementById('invDiscount').value)||0;
+  const total = subtotal - discount;
+
+  const invoicePayload = {
+    invoice_number: document.getElementById('invNumber').value,
+    customer_id: customerId,
+    invoice_date: document.getElementById('invDate').value,
+    due_date: document.getElementById('invDueDate').value,
+    status: 'unpaid',
+    subtotal, discount, total, amount_paid: 0,
+    notes: document.getElementById('invNotes').value
+  };
+
+  try{
+    await gsRun('addInvoice', invoicePayload, items);
+    showToast('Invoice tersimpan!');
+    closeModal('modalInvoice');
+    await loadAll();
+  }catch(e){ console.error(e); showToast('Gagal simpan: '+(e.message||e)); }
+}
+async function markPaid(id){
+  try{
+    const inv = state.invoices.find(i=>i.id===id);
+    await gsRun('markInvoicePaid', id, inv.total);
+    showToast('Invoice ditandai lunas.');
+    await loadAll();
+  }catch(e){ showToast('Gagal update: '+(e.message||e)); }
+}
+async function deleteInvoice(id){
+  if(!confirm('Hapus invoice ini? Item di dalamnya akan ikut terhapus.')) return;
+  try{
+    await gsRun('deleteInvoiceCascade', id);
+    showToast('Invoice dihapus.');
+    await loadAll();
+  }catch(e){ showToast('Gagal hapus: '+(e.message||e)); }
+}
+function printInvoice(id){
+  const inv = state.invoices.find(i=>i.id===id);
+  const cust = state.customers.find(c=>c.id===inv.customer_id);
+  const items = state.invoiceItemsFlat.filter(it=>it.invoice_id===id);
+  const win = window.open('', '_blank', 'width=800,height=900');
+  win.document.write(`
+    <html><head><title>${inv.invoice_number}</title>
+    <style>
+      body{ font-family: Georgia, serif; color:#542916; padding:40px; }
+      h1{ color:#a13a1e; margin-bottom:0;}
+      .muted{ color:#8a7a68; font-size:13px; }
+      table{ width:100%; border-collapse:collapse; margin-top:20px; }
+      th,td{ padding:8px; border-bottom:1px solid #eee; text-align:left; font-size:14px;}
+      th{ background:#fefaf0; }
+      .totals{ margin-top:16px; width:280px; margin-left:auto; }
+      .totals div{ display:flex; justify-content:space-between; padding:4px 0; }
+      .totals .grand{ font-weight:bold; font-size:18px; border-top:2px solid #542916; padding-top:8px;}
+    </style></head><body>
+    <h1>🍊 The Tangerine Room</h1>
+    <div class="muted">Invoice ${inv.invoice_number}</div>
+    <div class="muted">Tanggal: ${fmtDate(inv.invoice_date)} · Jatuh Tempo: ${fmtDate(inv.due_date)}</div>
+    <hr>
+    <p><b>Ditagihkan kepada:</b><br>${cust?cust.name:'-'}<br>${cust?.address||''}<br>${cust?.phone||''}</p>
+    <table><thead><tr><th>Produk</th><th>Qty</th><th>Harga</th><th>Subtotal</th></tr></thead>
+    <tbody>${items.map(it=>`<tr><td>${it.product_name}</td><td>${it.quantity}</td><td>${fmtIDR(it.unit_price)}</td><td>${fmtIDR(it.line_total)}</td></tr>`).join('')}</tbody></table>
+    <div class="totals">
+      <div><span>Subtotal</span><span>${fmtIDR(inv.subtotal)}</span></div>
+      <div><span>Diskon</span><span>${fmtIDR(inv.discount)}</span></div>
+      <div class="grand"><span>Total</span><span>${fmtIDR(inv.total)}</span></div>
+    </div>
+    ${inv.notes ? `<p class="muted">Catatan: ${inv.notes}</p>` : ''}
+    <script>window.print();<\/script>
+    </body></html>
+  `);
+  win.document.close();
+}
+
+/* =========================================================
+   SALES HISTORY
+========================================================= */
+function renderSales(){
+  const from = document.getElementById('salesFrom').value;
+  const to = document.getElementById('salesTo').value;
+  let invoices = state.invoices.filter(i=>i.status!=='void');
+  if(from) invoices = invoices.filter(i=>i.invoice_date >= from);
+  if(to) invoices = invoices.filter(i=>i.invoice_date <= to);
+  const invIds = new Set(invoices.map(i=>i.id));
+  const items = state.invoiceItemsFlat.filter(it=>invIds.has(it.invoice_id));
+
+  // by product
+  const byProduct = {};
+  items.forEach(it=>{
+    if(!byProduct[it.product_name]) byProduct[it.product_name] = {qty:0, revenue:0};
+    byProduct[it.product_name].qty += Number(it.quantity);
+    byProduct[it.product_name].revenue += Number(it.line_total);
+  });
+  const bpRows = Object.entries(byProduct).sort((a,b)=>b[1].revenue-a[1].revenue);
+  document.querySelector('#salesByProductTable tbody').innerHTML = bpRows.length? bpRows.map(([name,v])=>`<tr><td>${name}</td><td>${v.qty}</td><td>${fmtIDR(v.revenue)}</td></tr>`).join('') : `<tr><td colspan="3"><div class="empty-state">Tidak ada data</div></td></tr>`;
+
+  // by customer
+  const byCust = {};
+  invoices.forEach(inv=>{
+    const cust = state.customers.find(c=>c.id===inv.customer_id);
+    const name = cust?cust.name:'Unknown';
+    if(!byCust[name]) byCust[name] = {count:0, revenue:0};
+    byCust[name].count += 1;
+    byCust[name].revenue += Number(inv.total);
+  });
+  const bcRows = Object.entries(byCust).sort((a,b)=>b[1].revenue-a[1].revenue);
+  document.querySelector('#salesByCustomerTable tbody').innerHTML = bcRows.length? bcRows.map(([name,v])=>`<tr><td>${name}</td><td>${v.count}</td><td>${fmtIDR(v.revenue)}</td></tr>`).join('') : `<tr><td colspan="3"><div class="empty-state">Tidak ada data</div></td></tr>`;
+
+  // detail
+  const detailRows = items.map(it=>{
+    const inv = state.invoices.find(i=>i.id===it.invoice_id);
+    const cust = state.customers.find(c=>c.id===inv?.customer_id);
+    return {date: inv?.invoice_date, invNum: inv?.invoice_number, custName: cust?cust.name:'-', ...it};
+  }).sort((a,b)=> (b.date||'').localeCompare(a.date||''));
+  document.querySelector('#salesDetailTable tbody').innerHTML = detailRows.length ? detailRows.map(r=>`
+    <tr><td>${fmtDate(r.date)}</td><td>${r.invNum||'-'}</td><td>${r.custName}</td><td>${r.product_name}</td><td>${r.quantity}</td><td>${fmtIDR(r.line_total)}</td></tr>
+  `).join('') : `<tr><td colspan="6"><div class="empty-state">Tidak ada data</div></td></tr>`;
+}
+
+/* =========================================================
+   INGREDIENT PURCHASES
+========================================================= */
+function renderIngredientPurchasesTable(){
+  const tbody = document.querySelector('#ingredientPurchasesTable tbody');
+  tbody.innerHTML = state.ingredientPurchases.length ? state.ingredientPurchases.map(p=>`
+    <tr>
+      <td>${fmtDate(p.purchase_date)}</td><td>${p.ingredient_name}</td><td>${p.supplier||'-'}</td>
+      <td>${p.quantity} ${p.unit||''}</td><td>${fmtIDR(p.unit_cost)}</td><td>${fmtIDR(p.total_cost)}</td>
+      <td><button class="icon-btn" onclick="deleteRow('ingredient_purchases','${p.id}')">🗑️</button></td>
+    </tr>
+  `).join('') : `<tr><td colspan="7"><div class="empty-state">Belum ada pembelian bahan tercatat.</div></td></tr>`;
+}
+function openIngredientPurchaseModal(){
+  document.getElementById('ipDate').value = todayStr();
+  document.getElementById('ipSupplier').value = '';
+  document.getElementById('ipQty').value = 1;
+  document.getElementById('ipUnitCost').value = 0;
+  document.getElementById('ipTotalCost').value = 0;
+  document.getElementById('ipNotes').value = '';
+  populateSelects();
+  const ingSel = document.getElementById('ipIngredient');
+  if(ingSel.options.length) document.getElementById('ipUnit').value = ingSel.selectedOptions[0].dataset.unit;
+  ingSel.onchange = ()=>{ document.getElementById('ipUnit').value = ingSel.selectedOptions[0].dataset.unit; };
+  openModal('modalIngredientPurchase');
+}
+function ipRecalc(){
+  const qty = Number(document.getElementById('ipQty').value)||0;
+  const cost = Number(document.getElementById('ipUnitCost').value)||0;
+  document.getElementById('ipTotalCost').value = (qty*cost).toFixed(0);
+}
+async function saveIngredientPurchase(){
+  const sel = document.getElementById('ipIngredient');
+  const opt = sel.selectedOptions[0];
+  if(!opt){ showToast('Tambahkan bahan dulu di Settings.'); return; }
+  const payload = {
+    purchase_date: document.getElementById('ipDate').value,
+    ingredient_id: sel.value,
+    ingredient_name: opt.textContent,
+    supplier: document.getElementById('ipSupplier').value,
+    quantity: Number(document.getElementById('ipQty').value)||0,
+    unit: document.getElementById('ipUnit').value,
+    unit_cost: Number(document.getElementById('ipUnitCost').value)||0,
+    total_cost: Number(document.getElementById('ipTotalCost').value)||0,
+    notes: document.getElementById('ipNotes').value
+  };
+  try{
+    await gsRun('addIngredientPurchase', payload);
+    showToast('Pembelian bahan tersimpan.');
+    closeModal('modalIngredientPurchase');
+    await loadAll();
+  }catch(e){ showToast('Gagal simpan: '+(e.message||e)); }
+}
+
+/* =========================================================
+   ASSET PURCHASES (Tools/Utensil) & MAINTENANCE
+========================================================= */
+function renderAssetPurchasesTable(){
+  const tbody = document.querySelector('#assetPurchasesTable tbody');
+  tbody.innerHTML = state.assetPurchases.length ? state.assetPurchases.map(p=>`
+    <tr>
+      <td>${fmtDate(p.purchase_date)}</td><td>${p.item_name}</td><td>${p.category}</td><td>${p.supplier||'-'}</td>
+      <td>${p.quantity}</td><td>${fmtIDR(p.total_cost)}</td>
+      <td><button class="icon-btn" onclick="deleteRow('asset_purchases','${p.id}')">🗑️</button></td>
+    </tr>
+  `).join('') : `<tr><td colspan="7"><div class="empty-state">Belum ada pembelian tools/utensil.</div></td></tr>`;
+}
+function openAssetModal(){
+  document.getElementById('asDate').value = todayStr();
+  document.getElementById('asName').value = '';
+  document.getElementById('asSupplier').value = '';
+  document.getElementById('asQty').value = 1;
+  document.getElementById('asUnitCost').value = 0;
+  document.getElementById('asTotalCost').value = 0;
+  document.getElementById('asNotes').value = '';
+  openModal('modalAsset');
+}
+function asRecalc(){
+  const qty = Number(document.getElementById('asQty').value)||0;
+  const cost = Number(document.getElementById('asUnitCost').value)||0;
+  document.getElementById('asTotalCost').value = (qty*cost).toFixed(0);
+}
+async function saveAssetPurchase(){
+  const payload = {
+    purchase_date: document.getElementById('asDate').value,
+    item_name: document.getElementById('asName').value,
+    category: document.getElementById('asCategory').value,
+    supplier: document.getElementById('asSupplier').value,
+    quantity: Number(document.getElementById('asQty').value)||0,
+    unit_cost: Number(document.getElementById('asUnitCost').value)||0,
+    total_cost: Number(document.getElementById('asTotalCost').value)||0,
+    notes: document.getElementById('asNotes').value
+  };
+  if(!payload.item_name){ showToast('Isi nama item dulu.'); return; }
+  try{
+    await gsRun('addAssetPurchase', payload);
+    showToast('Pembelian tersimpan.');
+    closeModal('modalAsset');
+    await loadAll();
+  }catch(e){ showToast('Gagal simpan: '+(e.message||e)); }
+}
+
+function renderMaintenanceTable(){
+  const tbody = document.querySelector('#maintenanceTable tbody');
+  tbody.innerHTML = state.maintenance.length ? state.maintenance.map(m=>`
+    <tr>
+      <td>${fmtDate(m.maintenance_date)}</td><td>${m.item_name}</td><td>${m.description||'-'}</td><td>${m.vendor||'-'}</td><td>${fmtIDR(m.cost)}</td>
+      <td><button class="icon-btn" onclick="deleteRow('maintenance_records','${m.id}')">🗑️</button></td>
+    </tr>
+  `).join('') : `<tr><td colspan="6"><div class="empty-state">Belum ada catatan maintenance.</div></td></tr>`;
+}
+function openMaintenanceModal(){
+  document.getElementById('mtDate').value = todayStr();
+  document.getElementById('mtName').value = '';
+  document.getElementById('mtVendor').value = '';
+  document.getElementById('mtCost').value = 0;
+  document.getElementById('mtDesc').value = '';
+  openModal('modalMaintenance');
+}
+async function saveMaintenance(){
+  const payload = {
+    maintenance_date: document.getElementById('mtDate').value,
+    item_name: document.getElementById('mtName').value,
+    vendor: document.getElementById('mtVendor').value,
+    cost: Number(document.getElementById('mtCost').value)||0,
+    description: document.getElementById('mtDesc').value
+  };
+  if(!payload.item_name){ showToast('Isi nama item dulu.'); return; }
+  try{
+    await gsRun('addMaintenance', payload);
+    showToast('Maintenance tersimpan.');
+    closeModal('modalMaintenance');
+    await loadAll();
+  }catch(e){ showToast('Gagal simpan: '+(e.message||e)); }
+}
+
+/* =========================================================
+   EMPLOYEES & PAYROLL
+========================================================= */
+function renderEmployeesTable(){
+  const rowsHtml = state.employees.length ? state.employees.map(e=>`
+    <tr>
+      <td>${e.name}</td><td>${e.role||'-'}</td><td>${labelPaymentType(e.payment_type)}</td><td>${fmtIDR(e.rate)}</td>
+      <td><button class="icon-btn" onclick="deleteRow('employees','${e.id}')">🗑️</button></td>
+    </tr>
+  `).join('') : `<tr><td colspan="5"><div class="empty-state">Belum ada karyawan.</div></td></tr>`;
+  document.querySelector('#employeesTable tbody').innerHTML = rowsHtml;
+  const t2 = document.querySelector('#employeesTable2 tbody');
+  if(t2) t2.innerHTML = rowsHtml;
+}
+function labelPaymentType(t){
+  return {monthly:'Bulanan', daily:'Harian', per_session:'Per Sesi', hourly:'Per Jam'}[t] || t;
+}
+function openEmployeeModal(){
+  document.getElementById('empName').value='';
+  document.getElementById('empRole').value='';
+  document.getElementById('empType').value='monthly';
+  document.getElementById('empRate').value=0;
+  document.getElementById('empNotes').value='';
+  openModal('modalEmployee');
+}
+async function saveEmployee(){
+  const payload = {
+    name: document.getElementById('empName').value,
+    role: document.getElementById('empRole').value,
+    payment_type: document.getElementById('empType').value,
+    rate: Number(document.getElementById('empRate').value)||0,
+    notes: document.getElementById('empNotes').value
+  };
+  if(!payload.name){ showToast('Isi nama karyawan.'); return; }
+  try{
+    await gsRun('addEmployee', payload);
+    showToast('Karyawan ditambahkan.');
+    closeModal('modalEmployee');
+    await loadAll();
+  }catch(e){ showToast('Gagal simpan: '+(e.message||e)); }
+}
+
+function renderPayrollTable(){
+  const tbody = document.querySelector('#payrollTable tbody');
+  tbody.innerHTML = state.payroll.length ? state.payroll.map(p=>`
+    <tr>
+      <td>${fmtDate(p.date_paid)}</td><td>${p.employee_name}</td>
+      <td>${p.period_start?fmtDate(p.period_start)+' - '+fmtDate(p.period_end):'-'}</td>
+      <td>${fmtIDR(p.amount)}</td><td>${p.status==='paid'?statusBadge('paid'):statusBadge('partial')}</td>
+    </tr>
+  `).join('') : `<tr><td colspan="5"><div class="empty-state">Belum ada pembayaran gaji tercatat.</div></td></tr>`;
+}
+function openPayrollModal(){
+  if(state.employees.length===0){ showToast('Tambahkan karyawan dulu.'); return; }
+  document.getElementById('prDate').value = todayStr();
+  document.getElementById('prPeriodStart').value = todayStr();
+  document.getElementById('prPeriodEnd').value = todayStr();
+  document.getElementById('prStatus').value = 'paid';
+  document.getElementById('prNotes').value = '';
+  populateSelects();
+  const empSel = document.getElementById('prEmployee');
+  document.getElementById('prAmount').value = empSel.selectedOptions[0]?.dataset.rate || 0;
+  empSel.onchange = ()=>{ document.getElementById('prAmount').value = empSel.selectedOptions[0].dataset.rate; };
+  openModal('modalPayroll');
+}
+async function savePayroll(){
+  const sel = document.getElementById('prEmployee');
+  const opt = sel.selectedOptions[0];
+  const payload = {
+    employee_id: sel.value,
+    employee_name: opt.textContent,
+    period_start: document.getElementById('prPeriodStart').value,
+    period_end: document.getElementById('prPeriodEnd').value,
+    amount: Number(document.getElementById('prAmount').value)||0,
+    date_paid: document.getElementById('prDate').value,
+    status: document.getElementById('prStatus').value,
+    notes: document.getElementById('prNotes').value
+  };
+  try{
+    await gsRun('addPayroll', payload);
+    showToast('Pembayaran gaji tersimpan.');
+    closeModal('modalPayroll');
+    await loadAll();
+  }catch(e){ showToast('Gagal simpan: '+(e.message||e)); }
+}
+
+/* =========================================================
+   SETTINGS: PRODUCTS / CUSTOMERS / INGREDIENTS MASTER
+========================================================= */
+function renderProductsTable(){
+  document.querySelector('#productsTable tbody').innerHTML = state.products.length ? state.products.map(p=>`
+    <tr>
+      <td>${p.name}</td><td>${p.category||'-'}</td><td>${fmtIDR(p.unit_price)}</td><td>${fmtIDR(p.cost_price)}</td>
+      <td>
+        <button class="icon-btn" onclick="openProductModalById('${p.id}')">✏️</button>
+        <button class="icon-btn" onclick="deleteRow('products','${p.id}')">🗑️</button>
+      </td>
+    </tr>
+  `).join('') : `<tr><td colspan="5"><div class="empty-state">Belum ada produk.</div></td></tr>`;
+}
+function openProductModalById(id){
+  const p = state.products.find(x=>x.id===id);
+  openProductModal(p);
+}
+function openProductModal(p){
+  document.getElementById('productModalTitle').textContent = p ? 'Edit Produk' : 'Tambah Produk';
+  document.getElementById('prodId').value = p ? p.id : '';
+  document.getElementById('prodName').value = p ? p.name : '';
+  document.getElementById('prodCategory').value = p ? p.category : '';
+  document.getElementById('prodPrice').value = p ? p.unit_price : 0;
+  document.getElementById('prodCost').value = p ? p.cost_price : 0;
+  openModal('modalProduct');
+}
+async function saveProduct(){
+  const id = document.getElementById('prodId').value;
+  const payload = {
+    id: id || undefined,
+    name: document.getElementById('prodName').value,
+    category: document.getElementById('prodCategory').value,
+    unit_price: Number(document.getElementById('prodPrice').value)||0,
+    cost_price: Number(document.getElementById('prodCost').value)||0
+  };
+  if(!payload.name){ showToast('Isi nama produk.'); return; }
+  try{
+    await gsRun('saveProduct', payload);
+    showToast('Produk tersimpan.');
+    closeModal('modalProduct');
+    await loadAll();
+  }catch(e){ showToast('Gagal simpan: '+(e.message||e)); }
+}
+
+function renderCustomersTable(){
+  document.querySelector('#customersTable tbody').innerHTML = state.customers.length ? state.customers.map(c=>`
+    <tr>
+      <td>${c.name}</td><td>${c.contact_person||'-'}</td><td>${c.phone||'-'}</td><td>${c.email||'-'}</td>
+      <td>
+        <button class="icon-btn" onclick="openCustomerModalById('${c.id}')">✏️</button>
+        <button class="icon-btn" onclick="deleteRow('customers','${c.id}')">🗑️</button>
+      </td>
+    </tr>
+  `).join('') : `<tr><td colspan="5"><div class="empty-state">Belum ada cafe. Tambahkan pelanggan pertamamu.</div></td></tr>`;
+}
+function openCustomerModalById(id){
+  const c = state.customers.find(x=>x.id===id);
+  openCustomerModal(c);
+}
+function openCustomerModal(c){
+  document.getElementById('customerModalTitle').textContent = c ? 'Edit Cafe' : 'Tambah Cafe';
+  document.getElementById('custId').value = c ? c.id : '';
+  document.getElementById('custName').value = c ? c.name : '';
+  document.getElementById('custContact').value = c ? c.contact_person : '';
+  document.getElementById('custPhone').value = c ? c.phone : '';
+  document.getElementById('custEmail').value = c ? c.email : '';
+  document.getElementById('custAddress').value = c ? c.address : '';
+  openModal('modalCustomer');
+}
+async function saveCustomer(){
+  const id = document.getElementById('custId').value;
+  const payload = {
+    id: id || undefined,
+    name: document.getElementById('custName').value,
+    contact_person: document.getElementById('custContact').value,
+    phone: document.getElementById('custPhone').value,
+    email: document.getElementById('custEmail').value,
+    address: document.getElementById('custAddress').value
+  };
+  if(!payload.name){ showToast('Isi nama cafe.'); return; }
+  try{
+    await gsRun('saveCustomer', payload);
+    showToast('Cafe tersimpan.');
+    closeModal('modalCustomer');
+    await loadAll();
+  }catch(e){ showToast('Gagal simpan: '+(e.message||e)); }
+}
+
+function renderIngredientsMasterTable(){
+  document.querySelector('#ingredientsMasterTable tbody').innerHTML = state.ingredients.length ? state.ingredients.map(i=>`
+    <tr><td>${i.name}</td><td>${i.category||'-'}</td><td>${i.unit||'-'}</td>
+    <td><button class="icon-btn" onclick="deleteRow('ingredients','${i.id}')">🗑️</button></td></tr>
+  `).join('') : `<tr><td colspan="4"><div class="empty-state">Belum ada bahan.</div></td></tr>`;
+}
+function openIngredientMasterModal(){
+  document.getElementById('imName').value='';
+  document.getElementById('imCategory').value='';
+  document.getElementById('imUnit').value='';
+  openModal('modalIngredientMaster');
+}
+async function saveIngredientMaster(){
+  const payload = {
+    name: document.getElementById('imName').value,
+    category: document.getElementById('imCategory').value,
+    unit: document.getElementById('imUnit').value
+  };
+  if(!payload.name){ showToast('Isi nama bahan.'); return; }
+  try{
+    await gsRun('addIngredientMaster', payload);
+    showToast('Bahan ditambahkan.');
+    closeModal('modalIngredientMaster');
+    await loadAll();
+  }catch(e){ showToast('Gagal simpan: '+(e.message||e)); }
+}
+
+/* =========================================================
+   GENERIC DELETE
+========================================================= */
+async function deleteRow(table, id){
+  if(!confirm('Hapus data ini?')) return;
+  try{
+    await gsRun('deleteRowByTable', table, id);
+    showToast('Terhapus.');
+    await loadAll();
+  }catch(e){ showToast('Gagal hapus: '+(e.message||e)); }
+}
+
+/* =========================================================
+   INIT
+========================================================= */
+loadAll();
+</script>
+</body>
+</html>
