@@ -1044,33 +1044,96 @@ function printInvoice(id){
   const inv = state.invoices.find(i=>i.id===id);
   const cust = state.customers.find(c=>c.id===inv.customer_id);
   const items = state.invoiceItemsFlat.filter(it=>it.invoice_id===id);
-  const win = window.open('', '_blank', 'width=800,height=900');
+  const win = window.open('', '_blank', 'width=850,height=1000');
   win.document.write(`
     <html><head><title>${inv.invoice_number}</title>
+    <meta charset="UTF-8">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;0,700;1,600;1,700&family=Inter:wght@400;500;600;700&family=Petit+Formal+Script&display=swap" rel="stylesheet">
     <style>
-      body{ font-family: Georgia, serif; color:#542916; padding:40px; }
-      h1{ color:#a13a1e; margin-bottom:0;}
-      .muted{ color:#8a7a68; font-size:13px; }
-      table{ width:100%; border-collapse:collapse; margin-top:20px; }
-      th,td{ padding:8px; border-bottom:1px solid #eee; text-align:left; font-size:14px;}
-      th{ background:#fefaf0; }
-      .totals{ margin-top:16px; width:280px; margin-left:auto; }
-      .totals div{ display:flex; justify-content:space-between; padding:4px 0; }
-      .totals .grand{ font-weight:bold; font-size:18px; border-top:2px solid #542916; padding-top:8px;}
+      :root{ --bca-blue:#005BB5; --ink:#1c1c1c; --muted:#8a8a8a; --line:#d9d8d4; }
+      *{ box-sizing:border-box; }
+      body{ margin:0; background:#eceae6; font-family:'Inter', Arial, sans-serif; color:var(--ink); padding:36px 16px; }
+      .page{ max-width:800px; margin:0 auto; background:#fff; padding:56px 56px 48px; }
+      .brand{ font-size:12px; font-weight:700; letter-spacing:.16em; text-transform:uppercase; }
+      .brand .sub{ font-size:10px; font-weight:500; letter-spacing:.1em; color:var(--muted); margin-top:3px; text-transform:uppercase; }
+      .invoice-title{ font-family:'Playfair Display', Georgia, serif; font-size:64px; line-height:1; margin:26px 0 0; }
+      .invoice-title .b{ font-weight:700; } .invoice-title .i{ font-weight:600; font-style:italic; }
+      .meta-row{ display:flex; justify-content:space-between; gap:30px; margin:36px 0 30px; padding-bottom:26px; border-bottom:1px solid var(--line); }
+      .meta-label{ font-size:10.5px; font-weight:700; letter-spacing:.14em; text-transform:uppercase; color:var(--muted); margin-bottom:8px; }
+      .bill-to .name{ font-size:14.5px; font-weight:600; margin-bottom:3px; }
+      .bill-to .addr{ font-size:13px; color:#4a4a4a; line-height:1.55; max-width:260px; }
+      .meta-right{ text-align:right; min-width:170px; }
+      .meta-right .row{ display:flex; justify-content:flex-end; gap:10px; font-size:13px; margin-bottom:6px; }
+      .meta-right .row .k{ color:var(--muted); font-weight:600; }
+      .meta-right .row .v{ font-weight:600; }
+      table{ width:100%; border-collapse:collapse; margin-bottom:6px; }
+      thead th{ text-align:left; font-size:10.5px; font-weight:700; letter-spacing:.12em; text-transform:uppercase; color:var(--muted); padding:0 8px 10px; border-bottom:1.5px solid var(--ink); }
+      thead th:not(:first-child){ text-align:right; }
+      tbody td{ padding:14px 8px; border-bottom:1px solid var(--line); font-size:13.5px; }
+      tbody td:not(:first-child){ text-align:right; white-space:nowrap; }
+      .totals{ margin:18px 0 40px; padding-top:8px; }
+      .totals .trow{ display:flex; justify-content:flex-end; align-items:center; gap:26px; font-size:13.5px; padding:6px 8px; }
+      .totals .trow .k{ color:var(--muted); font-weight:600; }
+      .totals .trow .v{ min-width:130px; text-align:right; font-weight:600; }
+      .totals .trow.due{ border-top:1.5px solid var(--ink); margin-top:6px; padding-top:14px; }
+      .totals .trow.due .k{ color:var(--ink); font-size:14px; font-weight:700; letter-spacing:.04em; text-transform:uppercase; }
+      .totals .trow.due .v{ font-size:20px; font-weight:700; }
+      .footer-row{ display:flex; justify-content:space-between; align-items:flex-end; gap:30px; margin-top:44px; }
+      .bca-badge{ display:inline-flex; align-items:center; gap:8px; margin-bottom:12px; }
+      .bca-mark{ background:var(--bca-blue); color:#fff; font-weight:800; font-size:13px; padding:4px 9px; border-radius:4px; }
+      .bca-full{ font-size:11.5px; color:var(--muted); font-weight:600; }
+      .pd-row{ font-size:13px; margin-bottom:5px; display:flex; gap:8px; }
+      .pd-row .k{ color:var(--muted); min-width:112px; }
+      .pd-row .v{ font-weight:600; }
+      .signature-block{ text-align:right; }
+      .signature-block .sig{ font-family:'Petit Formal Script', cursive; font-size:34px; }
+      .signature-block .sig-line{ border-top:1px solid var(--ink); width:200px; margin:2px 0 8px auto; }
+      .signature-block .brand-name{ font-size:12px; font-weight:700; letter-spacing:.14em; text-transform:uppercase; }
+      .thanks{ margin-top:40px; text-align:center; font-size:11.5px; color:var(--muted); letter-spacing:.06em; }
+      @media print{ body{ background:#fff; padding:0; } .page{ padding:30px 40px; } @page{ size:A4; margin:14mm; } }
     </style></head><body>
-    <h1>🍊 The Tangerine Room</h1>
-    <div class="muted">Invoice ${inv.invoice_number}</div>
-    <div class="muted">Tanggal: ${fmtDate(inv.invoice_date)} · Jatuh Tempo: ${fmtDate(inv.due_date)}</div>
-    <hr>
-    <p><b>Ditagihkan kepada:</b><br>${cust?cust.name:'-'}<br>${cust?.address||''}<br>${cust?.phone||''}</p>
-    <table><thead><tr><th>Produk</th><th>Qty</th><th>Harga</th><th>Subtotal</th></tr></thead>
-    <tbody>${items.map(it=>`<tr><td>${it.product_name}</td><td>${it.quantity}</td><td>${fmtIDR(it.unit_price)}</td><td>${fmtIDR(it.line_total)}</td></tr>`).join('')}</tbody></table>
-    <div class="totals">
-      <div><span>Subtotal</span><span>${fmtIDR(inv.subtotal)}</span></div>
-      <div><span>Diskon</span><span>${fmtIDR(inv.discount)}</span></div>
-      <div class="grand"><span>Total</span><span>${fmtIDR(inv.total)}</span></div>
+    <div class="page">
+      <div class="brand">🍊 THE TANGERINE ROOM<div class="sub">Handmade Pastry &amp; Cake</div></div>
+      <h1 class="invoice-title"><span class="b">IN</span><span class="i">VOICE</span></h1>
+      <div class="meta-row">
+        <div class="bill-to">
+          <div class="meta-label">Bill To</div>
+          <div class="name">${cust ? cust.name : '-'}</div>
+          <div class="addr">${(cust && cust.address) ? cust.address : ''}${(cust && cust.phone) ? '<br>'+cust.phone : ''}</div>
+        </div>
+        <div class="meta-right">
+          <div class="row"><span class="k">NO.</span><span class="v">${inv.invoice_number}</span></div>
+          <div class="row"><span class="k">DATE</span><span class="v">${fmtDate(inv.invoice_date)}</span></div>
+          <div class="row"><span class="k">DUE</span><span class="v">${fmtDate(inv.due_date)}</span></div>
+        </div>
+      </div>
+      <table>
+        <thead><tr><th>Description</th><th>Units</th><th>Rate</th><th>Sum</th></tr></thead>
+        <tbody>${items.map(it=>`<tr><td>${it.product_name}</td><td>${it.quantity}</td><td>${fmtIDR(it.unit_price)}</td><td>${fmtIDR(it.line_total)}</td></tr>`).join('')}</tbody>
+      </table>
+      <div class="totals">
+        <div class="trow"><span class="k">Subtotal</span><span class="v">${fmtIDR(inv.subtotal)}</span></div>
+        <div class="trow"><span class="k">Diskon</span><span class="v">${fmtIDR(inv.discount)}</span></div>
+        <div class="trow due"><span class="k">Amount Due</span><span class="v">${fmtIDR(inv.total)}</span></div>
+      </div>
+      <div class="footer-row">
+        <div class="payment-details">
+          <div class="meta-label">Payment Details</div>
+          <div class="bca-badge"><span class="bca-mark">BCA</span><span class="bca-full">Bank Central Asia</span></div>
+          <div class="pd-row"><span class="k">Account name</span><span class="v">Ninis Dewi Putri</span></div>
+          <div class="pd-row"><span class="k">Account number</span><span class="v">0055 0604 2000</span></div>
+          <div class="pd-row"><span class="k">Pay by</span><span class="v">${fmtDate(inv.due_date)}</span></div>
+        </div>
+        <div class="signature-block">
+          <div class="sig">Ninis</div>
+          <div class="sig-line"></div>
+          <div class="brand-name">The Tangerine Room</div>
+        </div>
+      </div>
+      ${inv.notes ? `<p style="font-size:12px;color:#8a8a8a;margin-top:20px;">Catatan: ${inv.notes}</p>` : ''}
+      <div class="thanks">Terima kasih atas kepercayaannya berbelanja di The Tangerine Room 🍊</div>
     </div>
-    ${inv.notes ? `<p class="muted">Catatan: ${inv.notes}</p>` : ''}
     <script>window.print();<\/script>
     </body></html>
   `);

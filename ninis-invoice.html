@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Invoice — Ninis Bakery</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;0,700;1,600;1,700&family=Inter:wght@400;500;600;700&family=Petit+Formal+Script&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bca-blue:#005BB5;
+    --ink:#1c1c1c;
+    --muted:#8a8a8a;
+    --line:#d9d8d4;
+    --paper:#ffffff;
+    --bg:#eceae6;
+  }
+  *{ box-sizing:border-box; }
+  body{
+    margin:0;
+    background:var(--bg);
+    font-family:'Inter', Arial, sans-serif;
+    color:var(--ink);
+    padding:36px 16px 80px;
+  }
+
+  /* ---------- toolbar (hidden on print) ---------- */
+  .toolbar{
+    max-width:800px; margin:0 auto 18px; display:flex; gap:10px; justify-content:flex-end;
+  }
+  .toolbar button{
+    font-family:inherit; font-size:13.5px; font-weight:600; border:1.5px solid #cfcfcf;
+    background:#fff; color:var(--ink); padding:9px 16px; border-radius:8px; cursor:pointer;
+  }
+  .toolbar button.primary{ background:var(--ink); color:#fff; border-color:var(--ink); }
+  .toolbar button:hover{ opacity:0.85; }
+
+  /* ---------- page ---------- */
+  .page{
+    max-width:800px; margin:0 auto; background:var(--paper);
+    padding:56px 56px 48px; box-shadow:0 6px 30px rgba(0,0,0,0.08);
+  }
+
+  [contenteditable]:hover{ outline:1px dashed #c9c9c9; outline-offset:2px; }
+  [contenteditable]:focus{ outline:1.5px solid var(--bca-blue); outline-offset:2px; background:#f7fbff; }
+
+  /* ---------- header ---------- */
+  .top-row{ display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:34px; }
+  .brand{
+    font-family:'Inter', sans-serif; font-size:12px; font-weight:700; letter-spacing:.16em;
+    text-transform:uppercase; color:var(--ink);
+  }
+  .brand .sub{ font-size:10px; font-weight:500; letter-spacing:.1em; color:var(--muted); margin-top:3px; text-transform:uppercase; }
+
+  .invoice-title{
+    font-family:'Playfair Display', Georgia, serif; font-size:64px; line-height:1;
+    margin:26px 0 0; letter-spacing:.01em;
+  }
+  .invoice-title .b{ font-weight:700; font-style:normal; }
+  .invoice-title .i{ font-weight:600; font-style:italic; }
+
+  /* ---------- meta ---------- */
+  .meta-row{
+    display:flex; justify-content:space-between; gap:30px; margin:36px 0 30px;
+    padding-bottom:26px; border-bottom:1px solid var(--line);
+  }
+  .meta-label{
+    font-size:10.5px; font-weight:700; letter-spacing:.14em; text-transform:uppercase;
+    color:var(--muted); margin-bottom:8px;
+  }
+  .bill-to .name{ font-size:14.5px; font-weight:600; margin-bottom:3px; }
+  .bill-to .addr{ font-size:13px; color:#4a4a4a; line-height:1.55; max-width:260px; }
+
+  .meta-right{ text-align:right; min-width:160px; }
+  .meta-right .row{ display:flex; justify-content:flex-end; gap:10px; font-size:13px; margin-bottom:6px; }
+  .meta-right .row .k{ color:var(--muted); font-weight:600; letter-spacing:.06em; }
+  .meta-right .row .v{ font-weight:600; min-width:90px; text-align:left; }
+
+  /* ---------- table ---------- */
+  table{ width:100%; border-collapse:collapse; margin-bottom:6px; }
+  thead th{
+    text-align:left; font-size:10.5px; font-weight:700; letter-spacing:.12em; text-transform:uppercase;
+    color:var(--muted); padding:0 8px 10px; border-bottom:1.5px solid var(--ink);
+  }
+  thead th:not(:first-child){ text-align:right; }
+  tbody td{ padding:14px 8px; border-bottom:1px solid var(--line); font-size:13.5px; vertical-align:top; }
+  tbody td:not(:first-child){ text-align:right; white-space:nowrap; }
+  tbody td.desc .item-name{ font-weight:600; margin-bottom:2px; }
+  tbody td.desc .item-sub{ font-size:12px; color:var(--muted); }
+  .row-del{
+    border:none; background:none; color:#c0392b; font-size:15px; cursor:pointer; padding:0 0 0 10px;
+    opacity:.35; vertical-align:middle;
+  }
+  .row-del:hover{ opacity:1; }
+
+  .add-row-btn{
+    font-family:inherit; font-size:12.5px; font-weight:600; color:var(--bca-blue); background:none;
+    border:none; cursor:pointer; padding:10px 8px; letter-spacing:.02em;
+  }
+  .add-row-btn:hover{ text-decoration:underline; }
+
+  /* ---------- totals ---------- */
+  .totals{ margin:18px 0 40px; padding-top:8px; }
+  .totals .trow{
+    display:flex; justify-content:flex-end; align-items:center; gap:26px; font-size:13.5px; padding:6px 8px;
+  }
+  .totals .trow .k{ color:var(--muted); font-weight:600; }
+  .totals .trow .v{ min-width:110px; text-align:right; font-weight:600; }
+  .totals .trow.due{
+    border-top:1.5px solid var(--ink); margin-top:6px; padding-top:14px;
+  }
+  .totals .trow.due .k{ color:var(--ink); font-size:14px; font-weight:700; letter-spacing:.04em; text-transform:uppercase; }
+  .totals .trow.due .v{ font-size:20px; font-weight:700; }
+
+  /* ---------- footer ---------- */
+  .footer-row{ display:flex; justify-content:space-between; align-items:flex-end; gap:30px; margin-top:44px; }
+
+  .payment-details .meta-label{ margin-bottom:12px; }
+  .bca-badge{
+    display:inline-flex; align-items:center; gap:8px; margin-bottom:12px;
+  }
+  .bca-badge .bca-mark{
+    background:var(--bca-blue); color:#fff; font-family:'Inter',sans-serif; font-weight:800;
+    font-size:13px; letter-spacing:.03em; padding:4px 9px; border-radius:4px;
+  }
+  .bca-badge .bca-full{ font-size:11.5px; color:var(--muted); font-weight:600; }
+  .pd-row{ font-size:13px; margin-bottom:5px; display:flex; gap:8px; }
+  .pd-row .k{ color:var(--muted); min-width:112px; }
+  .pd-row .v{ font-weight:600; }
+
+  .signature-block{ text-align:right; }
+  .signature-block .sig{
+    font-family:'Petit Formal Script', cursive; font-size:34px; color:var(--ink);
+    min-width:180px; display:inline-block; padding-bottom:2px;
+  }
+  .signature-block .sig-line{ border-top:1px solid var(--ink); width:200px; margin:2px 0 8px auto; }
+  .signature-block .brand-name{
+    font-size:12px; font-weight:700; letter-spacing:.14em; text-transform:uppercase;
+  }
+
+  .thanks{ margin-top:40px; text-align:center; font-size:11.5px; color:var(--muted); letter-spacing:.06em; }
+
+  @media print{
+    body{ background:#fff; padding:0; }
+    .toolbar{ display:none; }
+    .page{ box-shadow:none; padding:30px 40px; max-width:100%; }
+    .row-del, .add-row-btn{ display:none; }
+    [contenteditable]:hover, [contenteditable]:focus{ outline:none; background:none; }
+    @page{ size:A4; margin:14mm; }
+  }
+</style>
+</head>
+<body>
+
+<div class="toolbar">
+  <button onclick="addRow()">+ Tambah Item</button>
+  <button class="primary" onclick="window.print()">🖨️ Print / Save as PDF</button>
+</div>
+
+<div class="page" id="page">
+
+  <div class="top-row">
+    <div class="brand">
+      NINIS BAKERY
+      <div class="sub">Handmade Pastry &amp; Cake</div>
+    </div>
+  </div>
+
+  <h1 class="invoice-title"><span class="b">IN</span><span class="i">VOICE</span></h1>
+
+  <div class="meta-row">
+    <div class="bill-to">
+      <div class="meta-label">Bill To</div>
+      <div class="name" contenteditable="true">Nama Cafe / Pelanggan</div>
+      <div class="addr" contenteditable="true">Alamat lengkap pelanggan,<br>Kota, Kode Pos</div>
+    </div>
+    <div class="meta-right">
+      <div class="row"><span class="k">NO.</span><span class="v" contenteditable="true">001</span></div>
+      <div class="row"><span class="k">DATE</span><span class="v" contenteditable="true">01/07/2026</span></div>
+    </div>
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Description</th>
+        <th>Units</th>
+        <th>Rate (US$)</th>
+        <th>Sum</th>
+      </tr>
+    </thead>
+    <tbody id="itemsBody">
+      <tr>
+        <td class="desc">
+          <div class="item-name" contenteditable="true">Classic Tiramisu</div>
+          <div class="item-sub" contenteditable="true">Whole cake, 20cm</div>
+        </td>
+        <td contenteditable="true" class="qty" oninput="recalc()">2</td>
+        <td contenteditable="true" class="rate" oninput="recalc()">25.00</td>
+        <td class="sum">50.00</td>
+      </tr>
+      <tr>
+        <td class="desc">
+          <div class="item-name" contenteditable="true">Lemon Cake</div>
+          <div class="item-sub" contenteditable="true">Whole cake, 18cm</div>
+        </td>
+        <td contenteditable="true" class="qty" oninput="recalc()">3</td>
+        <td contenteditable="true" class="rate" oninput="recalc()">18.00</td>
+        <td class="sum">54.00</td>
+      </tr>
+    </tbody>
+  </table>
+  <button class="add-row-btn" onclick="addRow()">+ Tambah baris item</button>
+
+  <div class="totals">
+    <div class="trow"><span class="k">Subtotal</span><span class="v" id="subtotalVal">104.00</span></div>
+    <div class="trow">
+      <span class="k">Tax (%)</span>
+      <span class="v" id="taxPercent" contenteditable="true" oninput="recalc()">0</span>
+    </div>
+    <div class="trow due"><span class="k">Amount Due</span><span class="v" id="dueVal">$104.00</span></div>
+  </div>
+
+  <div class="footer-row">
+    <div class="payment-details">
+      <div class="meta-label">Payment Details</div>
+      <div class="bca-badge">
+        <span class="bca-mark">BCA</span>
+        <span class="bca-full">Bank Central Asia</span>
+      </div>
+      <div class="pd-row"><span class="k">Account name</span><span class="v" contenteditable="true">Ninis Dewi Putri</span></div>
+      <div class="pd-row"><span class="k">Account number</span><span class="v" contenteditable="true">0055 0604 2000</span></div>
+      <div class="pd-row"><span class="k">Pay by</span><span class="v" contenteditable="true" style="min-width:160px; display:inline-block;">&nbsp;</span></div>
+    </div>
+
+    <div class="signature-block">
+      <div class="sig" contenteditable="true">Ninis</div>
+      <div class="sig-line"></div>
+      <div class="brand-name">Ninis Bakery</div>
+    </div>
+  </div>
+
+  <div class="thanks">Terima kasih atas kepercayaannya berbelanja di Ninis Bakery 🍊</div>
+
+</div>
+
+<script>
+function recalc(){
+  let subtotal = 0;
+  document.querySelectorAll('#itemsBody tr').forEach(row=>{
+    const qty = parseFloat(row.querySelector('.qty').textContent.replace(',', '.')) || 0;
+    const rate = parseFloat(row.querySelector('.rate').textContent.replace(',', '.')) || 0;
+    const sum = qty * rate;
+    row.querySelector('.sum').textContent = sum.toFixed(2);
+    subtotal += sum;
+  });
+  const taxPct = parseFloat(document.getElementById('taxPercent').textContent.replace(',', '.')) || 0;
+  const due = subtotal * (1 + taxPct/100);
+  document.getElementById('subtotalVal').textContent = subtotal.toFixed(2);
+  document.getElementById('dueVal').textContent = '$' + due.toFixed(2);
+}
+
+function addRow(){
+  const tbody = document.getElementById('itemsBody');
+  const tr = document.createElement('tr');
+  tr.innerHTML = `
+    <td class="desc">
+      <div class="item-name" contenteditable="true">Nama item</div>
+      <div class="item-sub" contenteditable="true">Keterangan (opsional)</div>
+    </td>
+    <td contenteditable="true" class="qty" oninput="recalc()">1</td>
+    <td contenteditable="true" class="rate" oninput="recalc()">0.00</td>
+    <td class="sum">0.00</td>
+    <button class="row-del" onclick="this.closest('tr').remove(); recalc();" title="Hapus baris">✕</button>
+  `;
+  tbody.appendChild(tr);
+  recalc();
+}
+
+// add delete buttons to the two pre-existing rows
+document.querySelectorAll('#itemsBody tr').forEach(row=>{
+  const btn = document.createElement('button');
+  btn.className = 'row-del';
+  btn.title = 'Hapus baris';
+  btn.textContent = '✕';
+  btn.onclick = function(){ row.remove(); recalc(); };
+  row.lastElementChild.appendChild(btn);
+});
+
+recalc();
+</script>
+
+</body>
+</html>
