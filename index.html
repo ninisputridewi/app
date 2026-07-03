@@ -830,12 +830,16 @@ function renderDashboard(){
   const maintCost = state.maintenance.filter(p=>{const d=new Date(p.maintenance_date); return d>=from && d<=to;}).reduce((s,p)=>s+Number(p.cost||0),0);
   const payrollCost = state.payroll.filter(p=>{const d=new Date(p.date_paid); return d>=from && d<=to && p.status==='paid';}).reduce((s,p)=>s+Number(p.amount||0),0);
 
-  const profit = revenue - cogs - ingCost - assetCost - maintCost - payrollCost;
+  // Catatan: HPP (cost_price per produk) sudah mewakili biaya bahan untuk
+  // produk yang TERJUAL — jadi tidak dikurangi lagi dengan total pembelian
+  // bahan (ingCost), supaya biaya bahan tidak terhitung dua kali.
+  // Pembelian bahan (ingCost) tetap ditampilkan terpisah sebagai info cash-flow.
+  const profit = revenue - cogs - assetCost - maintCost - payrollCost;
 
   document.getElementById('statRevenue').textContent = fmtIDR(revenue);
   document.getElementById('statRevenueSub').textContent = orderCount + ' order dalam periode ini';
   document.getElementById('statProfit').textContent = fmtIDR(profit);
-  document.getElementById('statProfitSub').textContent = `HPP ${fmtIDR(cogs)} · Bahan ${fmtIDR(ingCost)} · Tools/Maint ${fmtIDR(assetCost+maintCost)} · Payroll ${fmtIDR(payrollCost)}`;
+  document.getElementById('statProfitSub').textContent = `HPP ${fmtIDR(cogs)} · Tools/Maint ${fmtIDR(assetCost+maintCost)} · Payroll ${fmtIDR(payrollCost)} · (Bahan dibeli periode ini: ${fmtIDR(ingCost)}, tidak dipotong dari profit)`;
   document.getElementById('statOrders').textContent = orderCount;
   const paidCount = invInRange.filter(i=>i.status==='paid').length;
   document.getElementById('statOrdersSub').textContent = paidCount + ' lunas · ' + (orderCount-paidCount) + ' belum lunas';
