@@ -924,7 +924,14 @@ function renderInvoicesTable(){
   }).join('');
 }
 
-function openInvoiceModal(){
+async function openInvoiceModal(){
+  // Refresh data dulu supaya harga jual & HPP produk yang dipakai selalu
+  // yang terbaru (kalau tidak, invoice bisa "mengunci" HPP lama dari saat
+  // halaman pertama kali dibuka, walau produknya sudah diedit belakangan).
+  document.getElementById('loadingOverlay').style.display = 'flex';
+  await loadAll();
+  document.getElementById('loadingOverlay').style.display = 'none';
+
   document.getElementById('invDate').value = todayStr();
   document.getElementById('invDueDate').value = todayStr();
   document.getElementById('invNumber').value = generateInvoiceNumber();
