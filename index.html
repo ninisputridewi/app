@@ -925,12 +925,17 @@ function renderInvoicesTable(){
 }
 
 async function openInvoiceModal(){
-  // Refresh data dulu supaya harga jual & HPP produk yang dipakai selalu
-  // yang terbaru (kalau tidak, invoice bisa "mengunci" HPP lama dari saat
-  // halaman pertama kali dibuka, walau produknya sudah diedit belakangan).
-  document.getElementById('loadingOverlay').style.display = 'flex';
-  await loadAll();
-  document.getElementById('loadingOverlay').style.display = 'none';
+  // Refresh HARGA & HPP produk + daftar cafe dulu (cuma 2 sheet, ringan)
+  // supaya invoice baru selalu pakai data terbaru, tanpa perlu tarik
+  // ulang SEMUA data (invoices, purchases, dll) yang bikin loading lama.
+  try{
+    const data = await gsRun('getProductsAndCustomers');
+    state.products = data.products || [];
+    state.customers = data.customers || [];
+  }catch(e){
+    console.error(e);
+    showToast('Gagal refresh data produk/cafe, pakai data terakhir yang ada.');
+  }
 
   document.getElementById('invDate').value = todayStr();
   document.getElementById('invDueDate').value = todayStr();
